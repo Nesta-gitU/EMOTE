@@ -22,13 +22,7 @@ def data_to_list(final_list, f):
         
         final_list.append(inner_list)
 
-    ###df = pd.DataFrame(final_list) only do this at the very end 
-    ###return final_list
-
-#### this is mostely taken from a tutorial about a packadge lets ask if that is fine during tutorial
 def all_data_to_dataframe(path):
-    # Define the location of the directory (was done in path)
-
     # Change the directory
     os.chdir(path)
 
@@ -46,6 +40,10 @@ def all_data_to_dataframe(path):
     
     df = pd.DataFrame(final_list)
     df.columns = ['date', 'topics', 'title', 'body']
+
+    # add column with combined title and body text
+    df['allText'] = df['title'] + ' ' + df['body']
+    
     return df.reset_index(drop=True)
 
     
