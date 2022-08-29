@@ -5,23 +5,21 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from nltk.tokenize import word_tokenize
 from nltk.corpus import stopwords
 from nltk.stem import WordNetLemmatizer
-#nltk.download('wordnet')
-#nltk.download('punkt')
-#nltk.download('stopwords')
-#nltk.download('omw-1.4')
 ##########################
 
-def preprocess(list_all):
+'''
+deliver a dataframe where the column is called allText.
+'''
+def preprocess(df_all):
     stopwords1 = stopwords.words('english')
     # the words we write here should be based on anlysis from bag of words I think
     new_stopwords = ["reuters", "said", 'reuter']
     stopwords1.extend(new_stopwords)
 
     stopwords2 = set(stopwords1)
-    df_all = pd.DataFrame(list_all, columns=['text'])
 
     for i in range(0, len(df_all)):
-        doc = df_all.loc[i, 'text']
+        doc = df_all.loc[i, 'allText']
         doc_tokens = word_tokenize(doc)
         doc_words = [word.lower() for word in doc_tokens if word.isalpha()]
         doc_nostop = [w for w in doc_words if not w in stopwords2]
@@ -29,7 +27,7 @@ def preprocess(list_all):
         for index, j in enumerate(doc_nostop):
             doc_nostop[index] = WordNetLemmatizer().lemmatize(j)
 
-        df_all.loc[i, 'text'] = doc_nostop
+        df_all.loc[i, 'allText'] = doc_nostop
 
     return df_all
 
