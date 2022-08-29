@@ -1,10 +1,10 @@
 ######## Imports ########
 import pandas as pd
 from sklearn.model_selection import train_test_split
-from ReadFile import all_data_to_dataframe
-from TextProcessing import get_tf_idf_matrix
-from TextProcessing import preprocess
-from E_MOTE.E_MOTE import oversample
+from Util.ReadFile import all_data_to_dataframe
+from Util.TextProcessing import get_tf_idf_matrix
+from Util.TextProcessing import preprocess
+from EMOTE.E_MOTE import oversample
 
 #########################
 def main():
@@ -27,7 +27,7 @@ def main():
 
     ################################ oversample below ####################################
 
-    oversampled_df_train_all_text = oversample(prep_df_train_all_text, y_train)
+    oversampled_df_train_all_text = oversample(prep_df_train_all_text, y_train, 20)
     
 
     ################################ do tfidf svm below ####################################
