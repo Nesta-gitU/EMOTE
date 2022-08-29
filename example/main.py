@@ -3,6 +3,9 @@ import pandas as pd
 from sklearn.model_selection import train_test_split
 from ReadFile import all_data_to_dataframe
 from TextProcessing import get_tf_idf_matrix
+from TextProcessing import preprocess
+from E_MOTE.E_MOTE import oversample
+
 #########################
 def main():
     print('running')
@@ -15,12 +18,21 @@ def main():
 
     df_train_all_text = pd.DataFrame(df_train['allText'], columns= ['allText'])
     print(df_train_all_text)
+    print(y_train)
 
-    ################################ oversample here ####################################
+    ################################ preprocess below ####################################
 
-    #####################################################################################
+    prep_df_train_all_text = preprocess(df_train_all_text)
+    print(prep_df_train_all_text)
 
-    tfidf_train, tfidf_val, tfidf_test = get_tf_idf_matrix(df_train['allText'], df_val['allText'], df_test['allText'])
+    ################################ oversample below ####################################
+
+    oversampled_df_train_all_text = oversample(prep_df_train_all_text, y_train)
+    
+
+    ################################ do tfidf svm below ####################################
+
+    #tfidf_train, tfidf_val, tfidf_test = get_tf_idf_matrix(df_train['allText'], df_val['allText'], df_test['allText'])
 
 
 
