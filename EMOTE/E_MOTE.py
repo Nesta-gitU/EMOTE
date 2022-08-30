@@ -6,6 +6,8 @@ from nltk.tokenize import word_tokenize
 from nltk.corpus import stopwords
 from nltk.stem import WordNetLemmatizer
 from random import sample
+from random import randint
+import numpy as np
 
 def oversample(df, y, percentage_docs_to_add):
     """calculates the sum of x and y.     
@@ -28,7 +30,6 @@ def oversample(df, y, percentage_docs_to_add):
     # create a seperate df with only category 1 to select from when oversampling
     df_1 = df[y.iloc[:, 0] == 1]
     df_1.reset_index(drop=True, inplace=True)
-    print(df_1)
 
     # create a list with the random indexes of the documents to be oversampled
     cat1_n = len(df_1)
@@ -43,11 +44,7 @@ def oversample(df, y, percentage_docs_to_add):
         if(number_of_extra_docs_needed > cat1_n):
             current_number_of_docs_to_add = cat1_n
         
-        
         all_index_list = list(range(0, cat1_n))
-        print(all_index_list)
-        print(current_number_of_docs_to_add)
-        print(sample(all_index_list, current_number_of_docs_to_add))
 
         index_list.append(sample(all_index_list, current_number_of_docs_to_add))
 
@@ -55,16 +52,66 @@ def oversample(df, y, percentage_docs_to_add):
 
 
     # create the oversampled documents
+    index_list = index_list[0]
     oversampled_list = []
+
+    check = 0
     for index in index_list:
-        current_doc = df_1.iloc[index]
-        print(index)
 
-        oversampled_list.append(current_doc)
+        current_doc = df_1.iloc[index, 0]
 
-    oversampled_df = pd.DataFrame(oversampled_list)
+        if check == 0:
+            print(current_doc)
+
+        result_doc = morf_text(current_doc, model, 50)
+
+        if check == 0:
+            print(result_doc)
+            check = check + 1
+
+        oversampled_list.append(result_doc)
+
+    # convert to dataframe and add below the original dataframe
+    oversampled_df = pd.DataFrame({df.columns[0]: oversampled_list})
+    oversampled_y = pd.DataFrame(1, index=np.arange(len(oversampled_df)), columns=y.columns)
+
+    df = pd.concat([df, oversampled_df], ignore_index=True)
+    y = pd.concat([y, oversampled_y], ignore_index=True)
+
+    return df, y
     
 
+def morf_text(token_list, model, change_percentage):
+    """Take the dataframes with input and convert them into the text file format which fastText accepts.     
+    Parameters:     
+        token_list (List): a list which contains 1 word at each position. 
+        model (fasttext model): a trained fasttext model. 
+        change_percentage (int): percentage of words you want to change to a near neighbor.
+    Returns:     
+        token_list (List): The token list that was provided as input with some percentage of words changed to a near neighbor.
+    """   
+    # check if input is valid 
+    if change_percentage <= 0 or change_percentage > 100: raise Exception("The pecentage of extra documents to add should be higher than 0 and smaller than or equal to 100")
+
+    # randomly sample change_percentage of the indexes of the words in the token list
+    change_words_n = int(len(token_list) * (change_percentage/100))
+
+    index_list = list(range(0, len(token_list)))
+
+    index_to_change_list = sample(index_list, change_words_n)
+
+    
+    for index in index_to_change_list:
+        
+        nearest = model.get_nearest_neighbors(token_list[index])
+
+        neighbor_index = randint(0,9)
+
+        new_token = nearest[neighbor_index][1]
+
+        token_list[index] = new_token
+
+    return token_list
 
 
 
@@ -100,3 +147,11 @@ def process_fasttext(df, y):
                                           escapechar = " ")
 
 
+def test():
+    df = pd.DataFrame({'team': ['A', 'A', 'B', 'B', 'B', 'C', 'C', 'C']})
+
+    d = pd.DataFrame(1, index=np.arange(50), columns=['hallo'])
+
+    print(d)
+
+test()

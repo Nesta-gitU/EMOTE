@@ -27,10 +27,11 @@ def main():
 
     ################################ oversample below ####################################
 
-    oversampled_df_train_all_text = oversample(prep_df_train_all_text, y_train, 20)
-    
+    oversampled_df_train_all_text, oversampled_y = oversample(prep_df_train_all_text, y_train, 20)
+    print(oversampled_df_train_all_text)
+    print(oversampled_y)
 
-    ################################ do tfidf svm below ####################################
+    ################################ do tfidf svm below ###################################
 
     #tfidf_train, tfidf_val, tfidf_test = get_tf_idf_matrix(df_train['allText'], df_val['allText'], df_test['allText'])
 
