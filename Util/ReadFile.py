@@ -2,6 +2,7 @@ from bs4 import BeautifulSoup
 import pandas as pd
 import os
 
+
 def data_to_list(final_list, f):
     data_raw = f.read()
 
@@ -48,3 +49,15 @@ def all_data_to_dataframe(path):
 
     
 
+def test():
+    vijf = 5
+    zes = 6
+
+    vijf = zes
+    vijf = 4
+
+    
+
+    print(zes)
+
+test()

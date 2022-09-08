@@ -5,6 +5,10 @@ from Util.ReadFile import all_data_to_dataframe
 from Util.TextProcessing import get_tf_idf_matrix
 from Util.TextProcessing import preprocess
 from EMOTE.E_MOTE import oversample
+from sklearn.linear_model import LogisticRegression
+from sklearn import metrics
+from sklearn.svm import SVC
+
 
 #########################
 def main():
@@ -14,9 +18,9 @@ def main():
     df = all_data_to_dataframe(path)
 
     ###############split data into training, validation and testing subsets #############
-    df_train, df_test, df_val, y_train, y_test, y_val = train_test_val_split(df, 'trade')
+    df_train, df_test, df_val, y_train, y_test, y_val = train_test_val_split(df, 'corn')
 
-    df_train_all_text = pd.DataFrame(df_train['allText'], columns= ['allText'])
+    df_train_all_text = pd.DataFrame(df_train.copy()['allText'], columns= ['allText'])
     print(df_train_all_text)
     print(y_train)
 
@@ -27,13 +31,76 @@ def main():
 
     ################################ oversample below ####################################
 
-    oversampled_df_train_all_text, oversampled_y = oversample(prep_df_train_all_text, y_train, 20)
+    oversampled_df_train_all_text, oversampled_y = oversample(prep_df_train_all_text, y_train)
     print(oversampled_df_train_all_text)
-    print(oversampled_y)
+    print(oversampled_y)  
 
     ################################ do tfidf svm below ###################################
+    # preprocess validation and test data. And preprocess non oversampled train data
+    df_train = preprocess(df_train)
+    df_test = preprocess(df_test)
+    df_val = preprocess(df_val)
 
-    #tfidf_train, tfidf_val, tfidf_test = get_tf_idf_matrix(df_train['allText'], df_val['allText'], df_test['allText'])
+    # get tfidf matrices
+    tfidf_train_over, tfidf_val_over, tfidf_test_over = get_tf_idf_matrix(oversampled_df_train_all_text, df_val, df_test)
+    tfidf_train, tfidf_val, tfidf_test = get_tf_idf_matrix(df_train, df_val, df_test)
+
+    print('oversampled')
+    print(tfidf_train_over)
+    print(tfidf_test_over)
+    print(tfidf_val_over)
+    
+    print('not oversampled')
+    print(tfidf_train)
+    print(tfidf_test)
+    print(tfidf_val)
+
+    # perform svm 
+    print('#################### not oversampled ################')
+    svm_predict(tfidf_train, tfidf_test, tfidf_val, y_train, y_test, y_val)
+
+    print('#################### oversampled ####################')
+    svm_predict(tfidf_train_over, tfidf_test_over, tfidf_val_over, oversampled_y, y_test, y_val)
+ 
+
+
+def svm_predict(tfidf_train, tfidf_test, tfidf_val, y_train, y_test, y_val):
+    clf = SVC()
+    clf.fit(tfidf_train ,y_train['topics'].tolist())
+    y_pred = clf.predict(tfidf_val)
+    y_pred2 = clf.predict(tfidf_test)
+
+    print('val')
+    print('accuracy: ', metrics.accuracy_score(y_val['topics'].tolist(), y_pred))
+    print('f1: ', metrics.f1_score(y_val['topics'].tolist(), y_pred))
+    print('precision: ', metrics.precision_score(y_val['topics'].tolist(), y_pred))
+    print('recall: ', metrics.recall_score(y_val['topics'].tolist(), y_pred))
+    
+    print('test')
+    print('accuracy: ', metrics.accuracy_score(y_test['topics'].tolist(), y_pred2))
+    print('f1: ', metrics.f1_score(y_test['topics'].tolist(), y_pred2))
+    print('precision: ', metrics.precision_score(y_test['topics'].tolist(), y_pred2))
+    print('recall: ', metrics.recall_score(y_test['topics'].tolist(), y_pred2))
+
+def lasso_predict(tfidf_train, tfidf_test, tfidf_val, y_train, y_test, y_val):
+    object = LogisticRegression(penalty='l1', solver='liblinear', class_weight="balanced")
+    clf = object.fit(tfidf_train, y_train) 
+
+    y_pred = clf.predict(tfidf_val)
+    y_pred2 = clf.predict(tfidf_test)
+
+    print('val')
+    print('accuracy: ', metrics.accuracy_score(y_val['topics'].tolist(), y_pred))
+    print('f1: ', metrics.f1_score(y_val['topics'].tolist(), y_pred))
+    print('precision: ', metrics.precision_score(y_val['topics'].tolist(), y_pred))
+    print('recall: ', metrics.recall_score(y_val['topics'].tolist(), y_pred))
+    
+    print('test')
+    print('accuracy: ', metrics.accuracy_score(y_test['topics'].tolist(), y_pred2))
+    print('f1: ', metrics.f1_score(y_test['topics'].tolist(), y_pred2))
+    print('precision: ', metrics.precision_score(y_test['topics'].tolist(), y_pred2))
+    print('recall: ', metrics.recall_score(y_test['topics'].tolist(), y_pred2))
+
 
 
 

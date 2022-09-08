@@ -11,6 +11,7 @@ from nltk.stem import WordNetLemmatizer
 deliver a dataframe where the column is called allText.
 '''
 def preprocess(df_all):
+    df_all = df_all.copy()
     stopwords1 = stopwords.words('english')
     # the words we write here should be based on anlysis from bag of words I think
     new_stopwords = ["reuters", "said", 'reuter']
@@ -36,15 +37,11 @@ def dummy_fun(doc):
     return doc
 
 
-def get_tf_idf_matrix(series_train, series_test, series_val):
-    list_train = series_train.tolist()
-    list_test = series_test.tolist()
-    list_val = series_val.tolist() 
+def get_tf_idf_matrix(df1, df2, df3):
 
-    # preprocess data
-    df1_all = preprocess(list_train)
-    df2_all = preprocess(list_test)
-    df3_all = preprocess(list_val)
+    df1_all = df1.copy()
+    df2_all = df2.copy()
+    df3_all = df3.copy()
 
     # create a bow matrix
     vectorizer = TfidfVectorizer(
@@ -53,13 +50,13 @@ def get_tf_idf_matrix(series_train, series_test, series_val):
         preprocessor=dummy_fun,
         token_pattern=None)
 
-    series1 = df1_all['text'].T
+    series1 = df1_all['allText'].T
     list1 = series1.tolist()
 
-    series2 = df2_all['text'].T
+    series2 = df2_all['allText'].T
     list2 = series2.tolist()
 
-    series3 = df3_all['text'].T
+    series3 = df3_all['allText'].T
     list3 = series3.tolist()
 
     # use only transform on test dataset to use same vocab as training set

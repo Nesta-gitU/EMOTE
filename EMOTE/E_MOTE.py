@@ -8,32 +8,34 @@ from nltk.stem import WordNetLemmatizer
 from random import sample
 from random import randint
 import numpy as np
+from itertools import chain
 
-def oversample(df, y, percentage_docs_to_add):
-    """calculates the sum of x and y.     
+def oversample(df, y):
+    """Makes df a balanced dataframe based on the categories in y. By oversampling category 1.     
     Parameters:     
         df (DataFrame): a (number of docs, 1) DataFrame containing one row with the **preprocessed, tokenized and stored in lists** text for each document. 
         y (Dataframe): a (number of docs, 1) DataFrame containing one row with the classification for each of the docs. Should be binary. 
                        1 for the category that we are oversampling, 0 for all other categories.            
-        percentage_docs_to_add: In a percentage of the current number of documents in our category. How many extra documents of our category should be added by oversampling.
     Returns:     
        DataFrame (DataFrame): A dataframe with the oversampled rows added below the original dataframe.
        y (DataFrame): a (number of docs + number of new oversampled docs, 1) DataFrame that adds the categories of the oversampled docs below the original categories. 
     """
-    # check if input is valid 
-    if percentage_docs_to_add <= 0: raise Exception("The pecentage of extra documents to add should be higher than 0")
+    y = y.copy()
+    df = df.copy()
 
     # initialize fastText model and data
     process_fasttext(df, y)
     model = fasttext.train_supervised('fasttext_text.txt')
     
+    #model = fasttext.load_model('wiki.en.bin')
     # create a seperate df with only category 1 to select from when oversampling
     df_1 = df[y.iloc[:, 0] == 1]
     df_1.reset_index(drop=True, inplace=True)
 
     # create a list with the random indexes of the documents to be oversampled
     cat1_n = len(df_1)
-    wanted_cat1_n = int(cat1_n *(1 + (percentage_docs_to_add/100)))
+    wanted_cat1_n = len(df) - cat1_n
+    
 
     number_of_extra_docs_needed = wanted_cat1_n - cat1_n
     index_list = []
@@ -51,12 +53,13 @@ def oversample(df, y, percentage_docs_to_add):
         number_of_extra_docs_needed = number_of_extra_docs_needed - current_number_of_docs_to_add
 
 
+    flat_index_list = list(chain.from_iterable(index_list))
+
     # create the oversampled documents
-    index_list = index_list[0]
     oversampled_list = []
 
     check = 0
-    for index in index_list:
+    for index in flat_index_list:
 
         current_doc = df_1.iloc[index, 0]
 
@@ -94,12 +97,12 @@ def morf_text(token_list, model, change_percentage):
     if change_percentage <= 0 or change_percentage > 100: raise Exception("The pecentage of extra documents to add should be higher than 0 and smaller than or equal to 100")
 
     # randomly sample change_percentage of the indexes of the words in the token list
+    token_list = token_list.copy()
     change_words_n = int(len(token_list) * (change_percentage/100))
 
     index_list = list(range(0, len(token_list)))
 
     index_to_change_list = sample(index_list, change_words_n)
-
     
     for index in index_to_change_list:
         
@@ -146,12 +149,3 @@ def process_fasttext(df, y):
                                           quotechar = "", 
                                           escapechar = " ")
 
-
-def test():
-    df = pd.DataFrame({'team': ['A', 'A', 'B', 'B', 'B', 'C', 'C', 'C']})
-
-    d = pd.DataFrame(1, index=np.arange(50), columns=['hallo'])
-
-    print(d)
-
-test()
