@@ -66,7 +66,7 @@ def oversample(df, y):
         if check == 0:
             print(current_doc)
 
-        result_doc = morf_text(current_doc, model, 50)
+        result_doc = [model.get_nearest_neighbors(token)[randint(0,9)][1] if randint(0,100) < 50 else token for token in current_doc]
 
         if check == 0:
             print(result_doc)
