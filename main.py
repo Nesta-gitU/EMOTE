@@ -38,14 +38,18 @@ def main():
 
     ################################ oversample below ####################################
 
-    #E-MOTE
-    oversampled_df_train_all_text, oversampled_y = oversample(df_train_under, y_train_under)
-    print(oversampled_df_train_all_text)
-    print(oversampled_y) 
-
-    #SMOTE
-
     #RANDOM
+    rus_over = over_sampling.RandomOverSampler(sampling_strategy = 1.0, random_state=0)
+    df_train_random, y_train_random_array = rus_over.fit_resample(df_train_under, y_train_under['topics'].tolist())
+
+    y_train_random = pd.DataFrame(y_train_random_array, columns = ['topics'])
+
+    print(df_train_random)
+
+    #E-MOTE
+    #oversampled_df_train_all_text, oversampled_y = oversample(df_train_under, y_train_under)
+    #print(oversampled_df_train_all_text)
+    #print(oversampled_y) 
 
     ################################ do tfidf svm below ###################################
     # preprocess validation and test data. And preprocess non oversampled train data
@@ -54,26 +58,46 @@ def main():
     df_val = preprocess(df_val)
 
     # get tfidf matrices
-    tfidf_train_over, tfidf_val_over, tfidf_test_over = get_tf_idf_matrix(oversampled_df_train_all_text, df_val, df_test)
-    #tfidf_train, tfidf_val, tfidf_test = get_tf_idf_matrix(df_train, df_val, df_test)
+    #tfidf_train_over, tfidf_val_over, tfidf_test_over = get_tf_idf_matrix(oversampled_df_train_all_text, df_val, df_test)
+    tfidf_train_random, tfidf_val_random, tfidf_test_random = get_tf_idf_matrix(df_train_random, df_val, df_test)
+    tfidf_train_under, tfidf_val_under, tfidf_test_under = get_tf_idf_matrix(df_train_under, df_val, df_test)
 
-    print('oversampled')
-    print(tfidf_train_over)
-    print(tfidf_test_over)
-    print(tfidf_val_over)
+
+    tfidf_train, tfidf_val, tfidf_test = get_tf_idf_matrix(df_train, df_val, df_test)
+
+    # apply smote to the tfidf matrices 
+    rus_smote = over_sampling.SMOTE(sampling_strategy = 1.0, random_state=0)
+    tfidf_train_smote, y_train_array_smote = rus_smote.fit_resample(tfidf_train_under, y_train_under['topics'].tolist())
+
+    y_train_smote = pd.DataFrame(y_train_array_smote, columns = ['topics'])
+ 
+    print('oversampled EMOTE')
+    #print(tfidf_train_over)
+    #print(tfidf_test_over)
+    #print(tfidf_val_over)
+
+    print('oversampled smote')
+    print(tfidf_train_smote)
+    print(tfidf_test_under)
+    print(tfidf_val_under)
     
     print('not oversampled')
-    #print(tfidf_train)
-    #print(tfidf_test)
-    #print(tfidf_val)
+    print(tfidf_train)
+    print(tfidf_test)
+    print(tfidf_val)
 
     # perform svm 
     #print('#################### not oversampled ################')
     #svm_predict(tfidf_train, tfidf_test, tfidf_val, y_train, y_test, y_val)
 
     print('#################### oversampled E-MOTE ####################')
-    svm_predict(tfidf_train_over, tfidf_test_over, tfidf_val_over, oversampled_y, y_test, y_val)
- 
+    #svm_predict(tfidf_train_over, tfidf_test_over, tfidf_val_over, oversampled_y, y_test, y_val)
+
+    print('#################### oversampled smote ####################')
+    svm_predict(tfidf_train_smote, tfidf_test_under, tfidf_val_under, y_train_smote, y_test, y_val)
+
+    print('#################### oversampled random ####################')
+    svm_predict(tfidf_train_random, tfidf_test_random, tfidf_val_random, y_train_random, y_test, y_val)  
 
 
 def svm_predict(tfidf_train, tfidf_test, tfidf_val, y_train, y_test, y_val):
