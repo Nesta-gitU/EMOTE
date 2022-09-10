@@ -8,6 +8,7 @@ from EMOTE.E_MOTE import oversample
 from sklearn.linear_model import LogisticRegression
 from sklearn import metrics
 from sklearn.svm import SVC
+from imblearn import under_sampling, over_sampling
 
 
 #########################
@@ -29,11 +30,22 @@ def main():
     prep_df_train_all_text = preprocess(df_train_all_text)
     print(prep_df_train_all_text)
 
+    ################################ undersample below ####################################
+    rus = under_sampling.RandomUnderSampler(sampling_strategy = {0 : 5000}, random_state=0)
+    df_train_under, y_train_under_array = rus.fit_resample(prep_df_train_all_text, y_train['topics'].tolist())
+
+    y_train_under = pd.DataFrame(y_train_under_array, columns = ['topics'])
+
     ################################ oversample below ####################################
 
-    oversampled_df_train_all_text, oversampled_y = oversample(prep_df_train_all_text, y_train)
+    #E-MOTE
+    oversampled_df_train_all_text, oversampled_y = oversample(df_train_under, y_train_under)
     print(oversampled_df_train_all_text)
-    print(oversampled_y)  
+    print(oversampled_y) 
+
+    #SMOTE
+
+    #RANDOM
 
     ################################ do tfidf svm below ###################################
     # preprocess validation and test data. And preprocess non oversampled train data
@@ -43,7 +55,7 @@ def main():
 
     # get tfidf matrices
     tfidf_train_over, tfidf_val_over, tfidf_test_over = get_tf_idf_matrix(oversampled_df_train_all_text, df_val, df_test)
-    tfidf_train, tfidf_val, tfidf_test = get_tf_idf_matrix(df_train, df_val, df_test)
+    #tfidf_train, tfidf_val, tfidf_test = get_tf_idf_matrix(df_train, df_val, df_test)
 
     print('oversampled')
     print(tfidf_train_over)
@@ -51,15 +63,15 @@ def main():
     print(tfidf_val_over)
     
     print('not oversampled')
-    print(tfidf_train)
-    print(tfidf_test)
-    print(tfidf_val)
+    #print(tfidf_train)
+    #print(tfidf_test)
+    #print(tfidf_val)
 
     # perform svm 
-    print('#################### not oversampled ################')
-    svm_predict(tfidf_train, tfidf_test, tfidf_val, y_train, y_test, y_val)
+    #print('#################### not oversampled ################')
+    #svm_predict(tfidf_train, tfidf_test, tfidf_val, y_train, y_test, y_val)
 
-    print('#################### oversampled ####################')
+    print('#################### oversampled E-MOTE ####################')
     svm_predict(tfidf_train_over, tfidf_test_over, tfidf_val_over, oversampled_y, y_test, y_val)
  
 

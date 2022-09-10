@@ -10,7 +10,7 @@ from random import randint
 import numpy as np
 from itertools import chain
 
-def oversample(df, y):
+def oversample(df, y, change_percentage = 30):
     """Makes df a balanced dataframe based on the categories in y. By oversampling category 1.     
     Parameters:     
         df (DataFrame): a (number of docs, 1) DataFrame containing one row with the **preprocessed, tokenized and stored in lists** text for each document. 
@@ -55,25 +55,12 @@ def oversample(df, y):
 
     flat_index_list = list(chain.from_iterable(index_list))
 
-    # create the oversampled documents
-    oversampled_list = []
+    # The line below is terribly confusing so here is an explanation.
+    # first make a list that contains all the docs that we want to change for the oversampling. 
+    # then in the inner list comprehension change change_percentage of the tokens in these docs to 1 of the 4 nearest neighbors.
 
-    check = 0
-    for index in flat_index_list:
-
-        current_doc = df_1.iloc[index, 0]
-
-        if check == 0:
-            print(current_doc)
-
-        result_doc = [model.get_nearest_neighbors(token)[randint(0,9)][1] if randint(0,100) < 50 else token for token in current_doc]
-
-        if check == 0:
-            print(result_doc)
-            check = check + 1
-
-        oversampled_list.append(result_doc)
-
+    oversampled_list = [[model.get_nearest_neighbors(token)[randint(0,4)][1] if randint(0,100) < change_percentage else token for token in df_1.iloc[index, 0]] for index in flat_index_list]
+    
     # convert to dataframe and add below the original dataframe
     oversampled_df = pd.DataFrame({df.columns[0]: oversampled_list})
     oversampled_y = pd.DataFrame(1, index=np.arange(len(oversampled_df)), columns=y.columns)
