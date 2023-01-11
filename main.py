@@ -4,7 +4,7 @@ from sklearn.model_selection import train_test_split
 from Util.ReadFile import all_data_to_dataframe
 from Util.TextProcessing import get_tf_idf_matrix
 from Util.TextProcessing import preprocess
-from EMOTE.E_MOTE import oversample
+from EMOTE_directory.src.E_MOTE.E_MOTE import oversample
 from sklearn.linear_model import LogisticRegression
 from sklearn import metrics
 from sklearn.svm import LinearSVC
