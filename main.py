@@ -7,28 +7,45 @@ from Util.TextProcessing import preprocess
 from EMOTE.E_MOTE import oversample
 from sklearn.linear_model import LogisticRegression
 from sklearn import metrics
-from sklearn.svm import SVC
+from sklearn.svm import LinearSVC
 from imblearn import under_sampling, over_sampling
 
 
 #########################
 def main():
-    print('running')
+    
     path = r"C:/Nesta/School/jaar 2/dsp/reuters-dataset/sgm-files" 
 
-    df = all_data_to_dataframe(path)
+    df, topic_list = all_data_to_dataframe(path)
+
+    print(topic_list)
+    print(len(topic_list))
+
+    rest_of_topics = ['dkr', 'jobs', 'acq', 'cpu', 'rape-oil', 'corn', 'zinc', 'ship', 'rice', 'rapeseed', 'soybean', 'strategic-metal', 'f-cattle', 'livestock', 'nzdlr', 'hk', 'fishmeal', 'naphtha', 'cocoa', 'austdlr', 'groundnut', 'retail', 'cornglutenfeed', 'citruspulp', 'sorghum', 'platinum', 'stg', 'meal-feed', 'instal-debt', 'oilseed', 'palm-oil', 'gas', 'sunseed', 'grain', 'saudriyal', 'hog', 'dmk', 'cottonseed', 'plywood', 'nickel', 'iron-steel', 'lead', 'dfl', 'wpi', 'coconut-oil', 'jet', 'lei', 'sun-oil', 'gnp', 'tin', 'peseta', 'skr', 'red-bean', 'palmkernel', 'castorseed', 'soy-oil', 'money-fx', 'yen', 'copra-cake', 'lin-oil', 'potato', 'rand', 'castor-oil', 'palladium', 'copper', 'earn', 'rubber', 'coffee', 'inventories', 'ipi', 'orange', 'lit', 'dlr', 'veg-oil', 'sun-meal', 'tea']
+
+    for topic in rest_of_topics:
+        get_output_3methods(topic, df)
+    
+
+def get_output_3methods(topic, df):
+    print('#########################output for ', topic,'############################')
+
+    df = df.copy()
 
     ###############split data into training, validation and testing subsets #############
-    df_train, df_test, df_val, y_train, y_test, y_val = train_test_val_split(df, 'corn')
+    return_tuple = train_test_val_split(df, topic)
+
+    if return_tuple == False:
+        print('execution stopped because minority class has less than 3 docs')
+        return  
+    
+    df_train, df_test, df_val, y_train, y_test, y_val = return_tuple
 
     df_train_all_text = pd.DataFrame(df_train.copy()['allText'], columns= ['allText'])
-    print(df_train_all_text)
-    print(y_train)
 
     ################################ preprocess below ####################################
 
     prep_df_train_all_text = preprocess(df_train_all_text)
-    print(prep_df_train_all_text)
 
     ################################ undersample below ####################################
     rus = under_sampling.RandomUnderSampler(sampling_strategy = {0 : 5000}, random_state=0)
@@ -44,12 +61,9 @@ def main():
 
     y_train_random = pd.DataFrame(y_train_random_array, columns = ['topics'])
 
-    print(df_train_random)
-
     #E-MOTE
-    #oversampled_df_train_all_text, oversampled_y = oversample(df_train_under, y_train_under)
-    #print(oversampled_df_train_all_text)
-    #print(oversampled_y) 
+    print('E-mote start')
+    oversampled_df_train_all_text, oversampled_y = oversample(df_train_under, y_train_under) 
 
     ################################ do tfidf svm below ###################################
     # preprocess validation and test data. And preprocess non oversampled train data
@@ -58,7 +72,7 @@ def main():
     df_val = preprocess(df_val)
 
     # get tfidf matrices
-    #tfidf_train_over, tfidf_val_over, tfidf_test_over = get_tf_idf_matrix(oversampled_df_train_all_text, df_val, df_test)
+    tfidf_train_over, tfidf_val_over, tfidf_test_over = get_tf_idf_matrix(oversampled_df_train_all_text, df_val, df_test)
     tfidf_train_random, tfidf_val_random, tfidf_test_random = get_tf_idf_matrix(df_train_random, df_val, df_test)
     tfidf_train_under, tfidf_val_under, tfidf_test_under = get_tf_idf_matrix(df_train_under, df_val, df_test)
 
@@ -67,31 +81,20 @@ def main():
 
     # apply smote to the tfidf matrices 
     rus_smote = over_sampling.SMOTE(sampling_strategy = 1.0, random_state=0)
-    tfidf_train_smote, y_train_array_smote = rus_smote.fit_resample(tfidf_train_under, y_train_under['topics'].tolist())
+    try:
+        tfidf_train_smote, y_train_array_smote = rus_smote.fit_resample(tfidf_train_under, y_train_under['topics'].tolist())
+    except:
+        print('execution stopped because of error with smote')
+        return
 
     y_train_smote = pd.DataFrame(y_train_array_smote, columns = ['topics'])
- 
-    print('oversampled EMOTE')
-    #print(tfidf_train_over)
-    #print(tfidf_test_over)
-    #print(tfidf_val_over)
-
-    print('oversampled smote')
-    print(tfidf_train_smote)
-    print(tfidf_test_under)
-    print(tfidf_val_under)
-    
-    print('not oversampled')
-    print(tfidf_train)
-    print(tfidf_test)
-    print(tfidf_val)
 
     # perform svm 
     #print('#################### not oversampled ################')
     #svm_predict(tfidf_train, tfidf_test, tfidf_val, y_train, y_test, y_val)
 
     print('#################### oversampled E-MOTE ####################')
-    #svm_predict(tfidf_train_over, tfidf_test_over, tfidf_val_over, oversampled_y, y_test, y_val)
+    svm_predict(tfidf_train_over, tfidf_test_over, tfidf_val_over, oversampled_y, y_test, y_val)
 
     print('#################### oversampled smote ####################')
     svm_predict(tfidf_train_smote, tfidf_test_under, tfidf_val_under, y_train_smote, y_test, y_val)
@@ -101,7 +104,7 @@ def main():
 
 
 def svm_predict(tfidf_train, tfidf_test, tfidf_val, y_train, y_test, y_val):
-    clf = SVC()
+    clf = LinearSVC()
     clf.fit(tfidf_train ,y_train['topics'].tolist())
     y_pred = clf.predict(tfidf_val)
     y_pred2 = clf.predict(tfidf_test)
@@ -118,41 +121,25 @@ def svm_predict(tfidf_train, tfidf_test, tfidf_val, y_train, y_test, y_val):
     print('precision: ', metrics.precision_score(y_test['topics'].tolist(), y_pred2))
     print('recall: ', metrics.recall_score(y_test['topics'].tolist(), y_pred2))
 
-def lasso_predict(tfidf_train, tfidf_test, tfidf_val, y_train, y_test, y_val):
-    object = LogisticRegression(penalty='l1', solver='liblinear', class_weight="balanced")
-    clf = object.fit(tfidf_train, y_train) 
-
-    y_pred = clf.predict(tfidf_val)
-    y_pred2 = clf.predict(tfidf_test)
-
-    print('val')
-    print('accuracy: ', metrics.accuracy_score(y_val['topics'].tolist(), y_pred))
-    print('f1: ', metrics.f1_score(y_val['topics'].tolist(), y_pred))
-    print('precision: ', metrics.precision_score(y_val['topics'].tolist(), y_pred))
-    print('recall: ', metrics.recall_score(y_val['topics'].tolist(), y_pred))
-    
-    print('test')
-    print('accuracy: ', metrics.accuracy_score(y_test['topics'].tolist(), y_pred2))
-    print('f1: ', metrics.f1_score(y_test['topics'].tolist(), y_pred2))
-    print('precision: ', metrics.precision_score(y_test['topics'].tolist(), y_pred2))
-    print('recall: ', metrics.recall_score(y_test['topics'].tolist(), y_pred2))
-
-
-
-
 
 #get approximately 8/1/1 split with train/test/val
 def train_test_val_split(df, selected_topic):
-       
-    print(df.tail(5))
+
+    number_y_1_docs = 0
     
     for i in range(len(df['topics'])):
         if selected_topic in df.loc[i, 'topics']:
             df.at[i, 'topics'] = 1
+            number_y_1_docs = number_y_1_docs + 1
 
         else: df.at[i, 'topics'] = 0
 
-    print(df.tail(5))
+    ######## check if we have at least 3 y=1 classes
+    print('number of minority class docs: ', number_y_1_docs)
+
+    if(number_y_1_docs < 3):
+        return False
+    #####################################################
     
     df_train, df_test = train_test_split(df, test_size=0.1, random_state= 9, stratify = df['topics'].tolist()) ## random state is 9 keep it like this 
     df_train, df_val = train_test_split(df_train, test_size=(1/9), random_state = 32, stratify = df_train['topics'].tolist())

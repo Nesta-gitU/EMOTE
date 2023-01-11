@@ -55,12 +55,8 @@ def oversample(df, y, change_percentage = 30):
 
     flat_index_list = list(chain.from_iterable(index_list))
 
-    # The line below is terribly confusing so here is an explanation.
-    # first make a list that contains all the docs that we want to change for the oversampling. 
-    # then in the inner list comprehension change change_percentage of the tokens in these docs to 1 of the 4 nearest neighbors.
-
     oversampled_list = [[model.get_nearest_neighbors(token)[randint(0,4)][1] if randint(0,100) < change_percentage else token for token in df_1.iloc[index, 0]] for index in flat_index_list]
-    
+
     # convert to dataframe and add below the original dataframe
     oversampled_df = pd.DataFrame({df.columns[0]: oversampled_list})
     oversampled_y = pd.DataFrame(1, index=np.arange(len(oversampled_df)), columns=y.columns)
@@ -69,40 +65,6 @@ def oversample(df, y, change_percentage = 30):
     y = pd.concat([y, oversampled_y], ignore_index=True)
 
     return df, y
-    
-
-def morf_text(token_list, model, change_percentage):
-    """Take the dataframes with input and convert them into the text file format which fastText accepts.     
-    Parameters:     
-        token_list (List): a list which contains 1 word at each position. 
-        model (fasttext model): a trained fasttext model. 
-        change_percentage (int): percentage of words you want to change to a near neighbor.
-    Returns:     
-        token_list (List): The token list that was provided as input with some percentage of words changed to a near neighbor.
-    """   
-    # check if input is valid 
-    if change_percentage <= 0 or change_percentage > 100: raise Exception("The pecentage of extra documents to add should be higher than 0 and smaller than or equal to 100")
-
-    # randomly sample change_percentage of the indexes of the words in the token list
-    token_list = token_list.copy()
-    change_words_n = int(len(token_list) * (change_percentage/100))
-
-    index_list = list(range(0, len(token_list)))
-
-    index_to_change_list = sample(index_list, change_words_n)
-    
-    for index in index_to_change_list:
-        
-        nearest = model.get_nearest_neighbors(token_list[index])
-
-        neighbor_index = randint(0,9)
-
-        new_token = nearest[neighbor_index][1]
-
-        token_list[index] = new_token
-
-    return token_list
-
 
 
 def process_fasttext(df, y):

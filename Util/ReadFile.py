@@ -3,7 +3,7 @@ import pandas as pd
 import os
 
 
-def data_to_list(final_list, f):
+def data_to_list(final_list, topic_list, f):
     data_raw = f.read()
 
     soup = BeautifulSoup(data_raw, 'html.parser')
@@ -19,15 +19,18 @@ def data_to_list(final_list, f):
         inner_list.append(article.topics.find_all(string = True))
         inner_list.append(article.title.string.lower())
         inner_list.append(article.body.string.lower())
-        
-        
+
         final_list.append(inner_list)
+
+        ## get the topics
+        topic_list.extend(article.topics.find_all(string = True))
 
 def all_data_to_dataframe(path):
     # Change the directory
     os.chdir(path)
 
     final_list = []
+    topic_list = []
 
     # Iterate over all the files in the directory
     for file in os.listdir():
@@ -36,28 +39,16 @@ def all_data_to_dataframe(path):
             file_path =f"{path}/{file}"
         
             f = open(file_path, mode= 'r' , encoding = 'utf−8' , errors = 'ignore')
-            data_to_list(final_list, f)
+            data_to_list(final_list, topic_list, f)
         
-    
+    topic_list = list(set(topic_list))
+
     df = pd.DataFrame(final_list)
     df.columns = ['date', 'topics', 'title', 'body']
 
     # add column with combined title and body text
     df['allText'] = df['title'] + ' ' + df['body']
+
+    os.chdir('C:/Nesta/oversample')
     
-    return df.reset_index(drop=True)
-
-    
-
-def test():
-    vijf = 5
-    zes = 6
-
-    vijf = zes
-    vijf = 4
-
-    
-
-    print(zes)
-
-test()
+    return df.reset_index(drop=True), topic_list
